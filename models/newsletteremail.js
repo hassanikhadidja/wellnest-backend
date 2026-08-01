@@ -13,23 +13,15 @@ const newsletterEmailSchema = new mongoose.Schema(
     name: { type: String, default: "", trim: true },
     source: {
       type: String,
-      enum: [
-        "account",
-        "footer",
-        "signup_drawer",
-        "notre_histoire",
-        "cookies",
-        "diy",
-        "printables",
-        "gifts",
-        "admin",
-      ],
-      default: "footer",
+      default: "newsletter",
+      index: true,
     },
-    accepted: { type: Boolean, default: true, index: true },
-    userId: { type: String, default: "", index: true },
   },
   { timestamps: true },
 );
+
+if (mongoose.models.newsletteremail) {
+  delete mongoose.models.newsletteremail;
+}
 
 module.exports = mongoose.model("newsletteremail", newsletterEmailSchema);

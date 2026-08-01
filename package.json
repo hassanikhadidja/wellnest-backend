@@ -1,7 +1,7 @@
 {
-  "name": "backend",
+  "name": "wellnest-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Wellnest Express + MongoDB API for the Next.js frontend",
   "license": "ISC",
   "author": "",
   "type": "commonjs",

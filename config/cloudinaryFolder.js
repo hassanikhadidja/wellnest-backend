@@ -1,4 +1,4 @@
-const CLOUDINARY_ROOT = "ajbloks";
+const CLOUDINARY_ROOT = "wellnest pics";
 
 function cloudinaryFolder(segment) {
   if (!segment || segment === CLOUDINARY_ROOT) return CLOUDINARY_ROOT;

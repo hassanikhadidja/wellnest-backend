@@ -4,28 +4,37 @@ const { getJwtSecret } = require("../config/jwtSecret");
 
 exports.Auth = async (req, res, next) => {
   try {
-
-    if (!req.headers.authorization) {
-  
+    const header = req.headers.authorization || "";
+    if (!header) {
       return res.status(401).json({ msg: "Unauthorized" });
     }
-      let token = req.headers.authorization?.split(" ")[1]; 
+
+    const token = header.startsWith("Bearer ")
+      ? header.slice(7)
+      : header.split(" ")[1];
+
     if (!token) {
-   
       return res.status(401).json({ msg: "Unauthorized" });
     }
 
-    const decoded = jwt.verify(token, getJwtSecret());
-    if (!decoded) {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, getJwtSecret());
+    } catch {
       return res.status(401).json({ msg: "Unauthorized" });
     }
- const user = await User.findById(decoded._id).select("-password");
+
+    const user = await User.findById(decoded._id).select("-password");
     if (!user) {
-      return res.status(404).json({ msg: "User not found" });
+      return res.status(401).json({ msg: "Unauthorized" });
     }
-   req.user = user; 
+
+    req.user = user;
     next();
   } catch (error) {
-    return res.status(500).json({ msg:error.message });
+    if (error.code === "JWT_SECRET_MISSING") {
+      return res.status(503).json({ msg: error.message });
+    }
+    return res.status(500).json({ msg: error.message });
   }
 };

@@ -1,11 +1,10 @@
-/** At least 6 chars, with one uppercase letter. Lowercase and digits are allowed. */
+/** Matches frontend AuthForm: at least 6 characters. */
 function passwordvalidator(ch) {
-  if (typeof ch !== "string" || ch.length < 6) return false;
-  return /[A-Z]/.test(ch);
+  return typeof ch === "string" && ch.length >= 6;
 }
 
 function passwordRequirementsMessage() {
-  return "Le mot de passe doit contenir au moins 6 caractères, dont une majuscule (A–Z).";
+  return "Le mot de passe doit contenir au moins 6 caractères.";
 }
 
 module.exports = passwordvalidator;

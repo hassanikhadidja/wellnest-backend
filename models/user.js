@@ -1,32 +1,36 @@
 const mongoose = require("mongoose");
 
-const kidsClubPromoSchema = new mongoose.Schema(
-  {
-    code: { type: String, required: true },
-    tier: { type: Number, required: true },
-    cycle: { type: Number, required: true },
-    used: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now },
-  },
-  { _id: false },
-);
+const CONTENT_ROLES = ["user", "admin", "client"];
 
-const userSchema = new mongoose.Schema({
-  email: { type: String, require: true, unique: true },
-  password: { type: String, require: true },
-  name: { type: String },
-  role: { type: String, enum: ["admin", "client"], default: "client" },
-  kidsClubBirthday: { type: String, default: "" },
-  kidsClubBirthdayLocked: { type: Boolean, default: false },
-  kidsClubPromoCodes: { type: [kidsClubPromoSchema], default: [] },
-  addresses: { type: [String], default: [] },
-  marketingEmail: { type: Boolean, default: true },
-});
+const userSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    password: { type: String, required: true },
+    name: { type: String, default: "", trim: true },
+    role: {
+      type: String,
+      enum: CONTENT_ROLES,
+      default: "user",
+      index: true,
+      set(value) {
+        if (value === "client") return "user";
+        return value === "admin" ? "admin" : "user";
+      },
+    },
+  },
+  { timestamps: true },
+);
 
 if (mongoose.models.user) {
   delete mongoose.models.user;
 }
 
-const user = mongoose.model("user", userSchema);
-
-module.exports = user;
+module.exports = mongoose.model("user", userSchema);
+module.exports.CONTENT_ROLES = CONTENT_ROLES;

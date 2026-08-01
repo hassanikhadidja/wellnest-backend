@@ -2,19 +2,24 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const { getJwtSecret } = require("../config/jwtSecret");
 
-exports.optionalAuth = async (req, res, next) => {
+async function optionalAuth(req, res, next) {
   try {
-    const header = req.headers.authorization;
-    if (!header) return next();
+    const header = req.headers.authorization || "";
+    const token = header.startsWith("Bearer ")
+      ? header.slice(7)
+      : header.split(" ")[1];
 
-    const token = header.split(" ")[1];
     if (!token) return next();
 
     const decoded = jwt.verify(token, getJwtSecret());
-    const user = await User.findById(decoded._id).select("-password");
-    if (user) req.user = user;
-    next();
+    if (decoded && decoded._id) {
+      const user = await User.findById(decoded._id).select("-password");
+      if (user) req.user = user;
+    }
   } catch {
-    next();
+    // ignore invalid token for public routes
   }
-};
+  next();
+}
+
+module.exports = optionalAuth;
