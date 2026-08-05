@@ -16,6 +16,12 @@ const newsletterEmailSchema = new mongoose.Schema(
       default: "newsletter",
       index: true,
     },
+    /** Whether this contact accepts marketing / newsletter emails */
+    accepted: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
   },
   { timestamps: true },
 );

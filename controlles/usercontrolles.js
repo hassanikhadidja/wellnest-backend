@@ -5,8 +5,24 @@ const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { getJwtSecret } = require("../config/jwtSecret");
+const NewsletterEmail = require("../models/newsletteremail");
 const { userToDash } = require("../utils/dto");
 const { upsertNewsletter } = require("./newslettercontrolles");
+
+async function newsletterAcceptedFor(email) {
+  const row = await NewsletterEmail.findOne({
+    email: String(email || "").trim().toLowerCase(),
+  }).select("accepted");
+  if (!row) return false;
+  return row.accepted !== false;
+}
+
+function userWithNewsletter(user, newsletterAccepted) {
+  return {
+    ...userToDash(user),
+    newsletterAccepted: Boolean(newsletterAccepted),
+  };
+}
 
 function issueToken(user) {
   return jwt.sign({ _id: user._id, role: user.role }, getJwtSecret(), {
@@ -54,10 +70,12 @@ exports.Adduser = async (req, res) => {
     });
 
     try {
+      // New accounts are listed under Emails but opted out until they enable newsletter.
       await upsertNewsletter({
         email: user.email,
         name: user.name,
         source: "account",
+        accepted: false,
       });
     } catch {
       // non-blocking
@@ -67,7 +85,7 @@ exports.Adduser = async (req, res) => {
     return res.status(201).json({
       msg: "Register success",
       token,
-      user: userToDash(user),
+      user: userWithNewsletter(user, false),
     });
   } catch (error) {
     if (error.code === "JWT_SECRET_MISSING") {
@@ -93,10 +111,11 @@ exports.Login = async (req, res) => {
     }
 
     const token = issueToken(existUser);
+    const newsletterAccepted = await newsletterAcceptedFor(existUser.email);
     return res.status(200).json({
       msg: "login success",
       token,
-      user: userToDash(existUser),
+      user: userWithNewsletter(existUser, newsletterAccepted),
     });
   } catch (error) {
     if (error.code === "JWT_SECRET_MISSING") {
@@ -108,7 +127,8 @@ exports.Login = async (req, res) => {
 
 exports.getUser = async (req, res) => {
   try {
-    return res.status(200).json(userToDash(req.user));
+    const newsletterAccepted = await newsletterAcceptedFor(req.user.email);
+    return res.status(200).json(userWithNewsletter(req.user, newsletterAccepted));
   } catch (error) {
     return res.status(500).json({ msg: error.message });
   }
@@ -156,12 +176,13 @@ exports.createUserAdmin = async (req, res) => {
         email: user.email,
         name: user.name,
         source: "account",
+        accepted: false,
       });
     } catch {
       // non-blocking
     }
 
-    return res.status(201).json(userToDash(user));
+    return res.status(201).json(userWithNewsletter(user, false));
   } catch (error) {
     return res.status(503).json({ msg: error.message });
   }
@@ -217,6 +238,7 @@ exports.UpdateUSER = async (req, res) => {
     await user.save();
 
     try {
+      // Keep existing accepted flag; only refresh name/email/source on the contact.
       await upsertNewsletter({
         email: user.email,
         name: user.name,
@@ -226,7 +248,11 @@ exports.UpdateUSER = async (req, res) => {
       // non-blocking
     }
 
-    return res.status(202).json({ msg: "Update success", user: userToDash(user) });
+    const newsletterAccepted = await newsletterAcceptedFor(user.email);
+    return res.status(202).json({
+      msg: "Update success",
+      user: userWithNewsletter(user, newsletterAccepted),
+    });
   } catch (error) {
     return res.status(503).json({ msg: error.message });
   }
@@ -253,7 +279,8 @@ exports.getProfile = async (req, res) => {
     if (!dbUser) {
       return res.status(404).json({ msg: "Utilisateur introuvable" });
     }
-    return res.status(200).json(userToDash(dbUser));
+    const newsletterAccepted = await newsletterAcceptedFor(dbUser.email);
+    return res.status(200).json(userWithNewsletter(dbUser, newsletterAccepted));
   } catch (error) {
     return res.status(500).json({ msg: error.message });
   }
@@ -284,17 +311,47 @@ exports.patchProfile = async (req, res) => {
 
     await dbUser.save();
 
-    try {
-      await upsertNewsletter({
-        email: dbUser.email,
-        name: dbUser.name,
-        source: "account",
-      });
-    } catch {
-      // non-blocking
+    let newsletterAccepted = await newsletterAcceptedFor(dbUser.email);
+    if (
+      "newsletterAccepted" in body ||
+      "accepted" in body ||
+      "acceptEmails" in body
+    ) {
+      const nextAccepted =
+        typeof body.newsletterAccepted === "boolean"
+          ? body.newsletterAccepted
+          : typeof body.accepted === "boolean"
+            ? body.accepted
+            : typeof body.acceptEmails === "boolean"
+              ? body.acceptEmails
+              : newsletterAccepted;
+      try {
+        await upsertNewsletter({
+          email: dbUser.email,
+          name: dbUser.name,
+          source: "account",
+          accepted: nextAccepted,
+        });
+        newsletterAccepted = nextAccepted;
+      } catch {
+        // keep previous
+      }
+    } else {
+      try {
+        await upsertNewsletter({
+          email: dbUser.email,
+          name: dbUser.name,
+          source: "account",
+        });
+      } catch {
+        // non-blocking
+      }
+      newsletterAccepted = await newsletterAcceptedFor(dbUser.email);
     }
 
-    return res.status(200).json(userToDash(dbUser));
+    return res
+      .status(200)
+      .json(userWithNewsletter(dbUser, newsletterAccepted));
   } catch (error) {
     return res.status(500).json({ msg: error.message });
   }

@@ -96,6 +96,7 @@ function emailToDash(item) {
     email: obj.email || "",
     name: obj.name || undefined,
     source,
+    accepted: obj.accepted !== false,
     createdAt: todayLabel(obj.createdAt || Date.now()),
   };
 }

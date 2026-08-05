@@ -13,7 +13,17 @@ function normalizeSource(source) {
   return source === "account" ? "account" : "newsletter";
 }
 
-async function upsertNewsletter({ email, name, source }) {
+function parseAccepted(body, fallback = true) {
+  if (!body || typeof body !== "object") return fallback;
+  if (typeof body.accepted === "boolean") return body.accepted;
+  if (typeof body.acceptEmails === "boolean") return body.acceptEmails;
+  if (typeof body.acceptedEmails === "boolean") return body.acceptedEmails;
+  if (body.accepted === "false" || body.acceptEmails === "false") return false;
+  if (body.accepted === "true" || body.acceptEmails === "true") return true;
+  return fallback;
+}
+
+async function upsertNewsletter({ email, name, source, accepted }) {
   const normalized = normalizeEmail(email);
   if (!EMAIL_RE.test(normalized)) {
     const err = new Error("Adresse e-mail invalide");
@@ -30,6 +40,7 @@ async function upsertNewsletter({ email, name, source }) {
       email: normalized,
       name: cleanName,
       source: src,
+      accepted: accepted !== false,
     });
   }
 
@@ -37,13 +48,18 @@ async function upsertNewsletter({ email, name, source }) {
   if (src === "account" || existing.source !== "account") {
     existing.source = src;
   }
+  if (typeof accepted === "boolean") {
+    existing.accepted = accepted;
+  }
   await existing.save();
   return existing;
 }
 
 exports.listNewsletterEmails = async (req, res) => {
   try {
-    const items = await NewsletterEmail.find().sort({ createdAt: -1 });
+    const acceptedOnly = String(req.query.accepted || "") === "1";
+    const filter = acceptedOnly ? { accepted: true } : {};
+    const items = await NewsletterEmail.find(filter).sort({ createdAt: -1 });
     res.json(items.map(emailToDash));
   } catch (e) {
     res.status(503).json({ msg: e.message });
@@ -53,10 +69,12 @@ exports.listNewsletterEmails = async (req, res) => {
 exports.createNewsletterEmail = async (req, res) => {
   try {
     const body = req.body || {};
+    const accepted = parseAccepted(body, true);
     const item = await upsertNewsletter({
       email: body.email,
       name: body.name,
       source: body.source,
+      accepted,
     });
     res.status(201).json({
       msg: "Inscription enregistrée",
@@ -75,6 +93,9 @@ exports.updateNewsletterEmail = async (req, res) => {
     const body = req.body || {};
     if ("name" in body) item.name = String(body.name || "").trim().slice(0, 120);
     if ("source" in body) item.source = normalizeSource(body.source);
+    if ("accepted" in body || "acceptEmails" in body || "acceptedEmails" in body) {
+      item.accepted = parseAccepted(body, item.accepted !== false);
+    }
     if ("email" in body) {
       const email = normalizeEmail(body.email);
       if (!EMAIL_RE.test(email)) {
@@ -110,13 +131,14 @@ exports.exportNewsletterEmails = async (req, res) => {
       if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
       return text;
     };
-    const lines = ["email,name,source,createdAt"];
+    const lines = ["email,name,source,accepted,createdAt"];
     for (const item of items) {
       lines.push(
         [
           esc(item.email),
           esc(item.name || ""),
           esc(item.source || ""),
+          esc(item.accepted !== false ? "true" : "false"),
           esc(item.createdAt ? new Date(item.createdAt).toISOString() : ""),
         ].join(","),
       );
