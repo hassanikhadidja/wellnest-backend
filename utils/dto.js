@@ -35,6 +35,7 @@ function articleToDash(article) {
   const obj = article.toObject ? article.toObject() : { ...article };
   return {
     id: toId(obj),
+    language: obj.language === "ar" ? "ar" : "fr",
     categories: Array.isArray(obj.categories) ? obj.categories : [],
     image: obj.image || "",
     title: obj.title || "",
@@ -62,6 +63,7 @@ function ebookToDash(ebook) {
   const recipeMeta = obj.recipeMeta || {};
   return {
     id: toId(obj),
+    language: obj.language === "ar" ? "ar" : "fr",
     featured: Boolean(obj.featured),
     categories: Array.isArray(obj.categories) ? obj.categories : [],
     isRecipe: Boolean(obj.isRecipe),
@@ -77,6 +79,7 @@ function ebookToDash(ebook) {
     author: obj.author || "",
     delivery: obj.delivery === "email-after-pay" ? "email-after-pay" : "immediate",
     pages: obj.pages || "",
+    image: obj.image || "",
     pdfUrl: obj.pdfUrl || "",
     pdfFileName: obj.pdfFileName || "",
     highlights: Array.isArray(obj.highlights) ? obj.highlights : [],

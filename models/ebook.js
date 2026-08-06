@@ -16,6 +16,12 @@ const recipeMetaSchema = new mongoose.Schema(
 
 const ebookSchema = new mongoose.Schema(
   {
+    language: {
+      type: String,
+      enum: ["fr", "ar"],
+      default: "fr",
+      index: true,
+    },
     featured: { type: Boolean, default: false, index: true },
     categories: {
       type: [String],
@@ -38,6 +44,8 @@ const ebookSchema = new mongoose.Schema(
       default: "immediate",
     },
     pages: { type: String, default: "" },
+    /** Cover image URL (Cloudinary or external) */
+    image: { type: String, default: "" },
     pdfUrl: { type: String, default: "" },
     pdfFileName: { type: String, default: "" },
     highlights: { type: [String], default: [] },

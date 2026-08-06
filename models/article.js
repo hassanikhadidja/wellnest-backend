@@ -21,6 +21,12 @@ const articleSectionSchema = new mongoose.Schema(
 
 const articleSchema = new mongoose.Schema(
   {
+    language: {
+      type: String,
+      enum: ["fr", "ar"],
+      default: "fr",
+      index: true,
+    },
     categories: {
       type: [String],
       default: [],

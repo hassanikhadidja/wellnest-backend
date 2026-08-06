@@ -38,6 +38,10 @@ function parseEbookBody(body, { partial = false } = {}) {
   if (!partial || "subtitle" in body) data.subtitle = String(body.subtitle ?? "");
   if (!partial || "author" in body) data.author = String(body.author ?? "");
   if (!partial || "pages" in body) data.pages = String(body.pages ?? "");
+  if (!partial || "image" in body) data.image = String(body.image ?? "");
+  if (!partial || "language" in body) {
+    data.language = body.language === "ar" ? "ar" : "fr";
+  }
   if (!partial || "pdfUrl" in body) data.pdfUrl = String(body.pdfUrl ?? "");
   if (!partial || "pdfFileName" in body) {
     data.pdfFileName = String(body.pdfFileName ?? "");

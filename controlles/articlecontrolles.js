@@ -40,6 +40,9 @@ function parseArticleBody(body, { partial = false } = {}) {
   }
   if (!partial || "subtitle" in body) data.subtitle = String(body.subtitle ?? "");
   if (!partial || "image" in body) data.image = String(body.image ?? "");
+  if (!partial || "language" in body) {
+    data.language = body.language === "ar" ? "ar" : "fr";
+  }
   if (!partial || "author" in body) data.author = String(body.author ?? "");
   if (!partial || "introduction" in body) {
     data.introduction = String(body.introduction ?? "");
