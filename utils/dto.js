@@ -35,7 +35,8 @@ function articleToDash(article) {
   const obj = article.toObject ? article.toObject() : { ...article };
   return {
     id: toId(obj),
-    language: obj.language === "ar" ? "ar" : "fr",
+    // Only send language when explicitly stored — omit default so Arabic content can be detected
+    language: obj.language === "ar" || obj.language === "fr" ? obj.language : undefined,
     categories: Array.isArray(obj.categories) ? obj.categories : [],
     image: obj.image || "",
     title: obj.title || "",
@@ -63,7 +64,7 @@ function ebookToDash(ebook) {
   const recipeMeta = obj.recipeMeta || {};
   return {
     id: toId(obj),
-    language: obj.language === "ar" ? "ar" : "fr",
+    language: obj.language === "ar" || obj.language === "fr" ? obj.language : undefined,
     featured: Boolean(obj.featured),
     categories: Array.isArray(obj.categories) ? obj.categories : [],
     isRecipe: Boolean(obj.isRecipe),
