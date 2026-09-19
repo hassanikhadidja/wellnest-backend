@@ -1,5 +1,5 @@
 const Ebook = require("../models/ebook");
-const { ALLOWED_EBOOK_CATEGORIES } = Ebook;
+const { ALLOWED_EBOOK_CATEGORIES } = require("../constants/ebookCategories");
 const { ebookToDash } = require("../utils/dto");
 
 function asStringArray(value) {
@@ -9,7 +9,10 @@ function asStringArray(value) {
 
 function normalizeCategories(raw) {
   if (!Array.isArray(raw)) return [];
-  return raw.filter((c) => ALLOWED_EBOOK_CATEGORIES.includes(c));
+  const allowed = new Set(ALLOWED_EBOOK_CATEGORIES);
+  return raw
+    .map((c) => String(c ?? "").trim())
+    .filter((c) => c && allowed.has(c));
 }
 
 function normalizeRecipeMeta(raw) {
@@ -56,6 +59,17 @@ function parseEbookBody(body, { partial = false } = {}) {
   }
   if (!partial || "categories" in body) {
     data.categories = normalizeCategories(body.categories);
+    if (
+      Array.isArray(body.categories) &&
+      body.categories.length > 0 &&
+      data.categories.length === 0
+    ) {
+      const err = new Error(
+        "Catégorie non reconnue. Utilisez une catégorie e-book valide (ex. Lunch Box)."
+      );
+      err.status = 400;
+      throw err;
+    }
   }
   if (!partial || "highlights" in body) {
     data.highlights = asStringArray(body.highlights);
@@ -90,6 +104,11 @@ exports.getEbook = async (req, res) => {
 exports.createEbook = async (req, res) => {
   try {
     const data = parseEbookBody(req.body || {});
+    if (!data.categories?.length) {
+      return res.status(400).json({
+        msg: "Choisissez au moins une catégorie e-book valide (ex. Lunch Box).",
+      });
+    }
     if (data.featured) {
       await Ebook.updateMany({ featured: true }, { $set: { featured: false } });
     }
