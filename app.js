@@ -8,6 +8,7 @@ const seedAdmin = require("./utils/seedAdmin");
 const userRoutes = require("./routes/userRoutes");
 const articleRoutes = require("./routes/articleRoutes");
 const ebookRoutes = require("./routes/ebookRoutes");
+const ebookCategoryRoutes = require("./routes/ebookCategoryRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
 const questionnaireRoutes = require("./routes/questionnaireRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
@@ -45,7 +46,7 @@ app.get("/", (req, res) => {
   res.json({
     status: "ok",
     message: "Wellnest API is running",
-    entities: ["users", "articles", "ebooks", "emails", "questionnaires"],
+    entities: ["users", "articles", "ebooks", "ebook-categories", "emails", "questionnaires"],
   });
 });
 
@@ -84,6 +85,7 @@ const mount = (prefix, router) => {
 mount("/user", userRoutes);
 mount("/article", articleRoutes);
 mount("/ebook", ebookRoutes);
+mount("/ebook-category", ebookCategoryRoutes);
 mount("/newsletter", newsletterRoutes);
 mount("/email", newsletterRoutes);
 mount("/questionnaire", questionnaireRoutes);

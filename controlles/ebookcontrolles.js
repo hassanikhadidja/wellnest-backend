@@ -1,5 +1,10 @@
 const Ebook = require("../models/ebook");
-const { ALLOWED_EBOOK_CATEGORIES } = require("../constants/ebookCategories");
+const {
+  LEGACY_EBOOK_CATEGORIES,
+} = require("../constants/ebookCategories");
+const {
+  getAllowedCategoryNames,
+} = require("./ebookCategorycontrolles");
 const { ebookToDash } = require("../utils/dto");
 
 function asStringArray(value) {
@@ -7,9 +12,10 @@ function asStringArray(value) {
   return value.map((v) => String(v ?? "").trim()).filter(Boolean);
 }
 
-function normalizeCategories(raw) {
+async function normalizeCategories(raw) {
   if (!Array.isArray(raw)) return [];
-  const allowed = new Set(ALLOWED_EBOOK_CATEGORIES);
+  const dynamic = await getAllowedCategoryNames();
+  const allowed = new Set([...dynamic, ...LEGACY_EBOOK_CATEGORIES]);
   return raw
     .map((c) => String(c ?? "").trim())
     .filter((c) => c && allowed.has(c));
@@ -27,7 +33,7 @@ function normalizeRecipeMeta(raw) {
   };
 }
 
-function parseEbookBody(body, { partial = false } = {}) {
+async function parseEbookBody(body, { partial = false } = {}) {
   const data = {};
   if (!partial || "title" in body) {
     const title = String(body.title ?? "").trim();
@@ -58,14 +64,14 @@ function parseEbookBody(body, { partial = false } = {}) {
       body.delivery === "email-after-pay" ? "email-after-pay" : "immediate";
   }
   if (!partial || "categories" in body) {
-    data.categories = normalizeCategories(body.categories);
+    data.categories = await normalizeCategories(body.categories);
     if (
       Array.isArray(body.categories) &&
       body.categories.length > 0 &&
       data.categories.length === 0
     ) {
       const err = new Error(
-        "Catégorie non reconnue. Utilisez une catégorie e-book valide (ex. Lunch Box)."
+        "Catégorie non reconnue. Ajoutez-la d'abord dans les catégories e-book."
       );
       err.status = 400;
       throw err;
@@ -103,10 +109,10 @@ exports.getEbook = async (req, res) => {
 
 exports.createEbook = async (req, res) => {
   try {
-    const data = parseEbookBody(req.body || {});
+    const data = await parseEbookBody(req.body || {});
     if (!data.categories?.length) {
       return res.status(400).json({
-        msg: "Choisissez au moins une catégorie e-book valide (ex. Lunch Box).",
+        msg: "Choisissez au moins une catégorie e-book valide.",
       });
     }
     if (data.featured) {
@@ -124,7 +130,7 @@ exports.updateEbook = async (req, res) => {
     const item = await Ebook.findById(req.params.id);
     if (!item) return res.status(404).json({ msg: "E-book introuvable" });
 
-    const data = parseEbookBody(req.body || {}, { partial: true });
+    const data = await parseEbookBody(req.body || {}, { partial: true });
     if (data.featured) {
       await Ebook.updateMany(
         { featured: true, _id: { $ne: item._id } },

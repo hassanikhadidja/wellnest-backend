@@ -1,8 +1,4 @@
 const mongoose = require("mongoose");
-const {
-  EBOOK_CATEGORIES,
-  ALLOWED_EBOOK_CATEGORIES,
-} = require("../constants/ebookCategories");
 
 const recipeMetaSchema = new mongoose.Schema(
   {
@@ -29,15 +25,6 @@ const ebookSchema = new mongoose.Schema(
     categories: {
       type: [String],
       default: [],
-      validate: {
-        validator(arr) {
-          return (
-            Array.isArray(arr) &&
-            arr.every((c) => ALLOWED_EBOOK_CATEGORIES.includes(c))
-          );
-        },
-        message: "Invalid ebook category",
-      },
     },
     isRecipe: { type: Boolean, default: false },
     recipeMeta: { type: recipeMetaSchema, default: () => ({}) },
@@ -64,5 +51,3 @@ const ebookSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("ebook", ebookSchema);
-module.exports.EBOOK_CATEGORIES = EBOOK_CATEGORIES;
-module.exports.ALLOWED_EBOOK_CATEGORIES = ALLOWED_EBOOK_CATEGORIES;
