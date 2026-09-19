@@ -1,5 +1,30 @@
 const mongoose = require("mongoose");
-const { CONTENT_CATEGORIES } = require("./article");
+
+const EBOOK_CATEGORIES = [
+  "Petit-déjeuner",
+  "Lunch Box",
+  "Déjeuners équilibrés",
+  "Desserts sains",
+  "Boissons saines",
+  "Fruits & Smoothies",
+  "Options végétariennes",
+  "Repas protéinés",
+  "Menus pour enfants",
+];
+
+/** Kept so existing documents can still be saved until re-tagged in the dashboard */
+const LEGACY_EBOOK_CATEGORIES = [
+  "Nutrition Maman",
+  "Bébé & Enfant",
+  "Enfants & Adolescents",
+  "Santé Globale",
+  "Bien-être & Équilibre",
+  "Bien-être",
+  "Recettes",
+  "Guides Pratiques",
+];
+
+const ALLOWED_EBOOK_CATEGORIES = [...EBOOK_CATEGORIES, ...LEGACY_EBOOK_CATEGORIES];
 
 const recipeMetaSchema = new mongoose.Schema(
   {
@@ -28,7 +53,10 @@ const ebookSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator(arr) {
-          return Array.isArray(arr) && arr.every((c) => CONTENT_CATEGORIES.includes(c));
+          return (
+            Array.isArray(arr) &&
+            arr.every((c) => ALLOWED_EBOOK_CATEGORIES.includes(c))
+          );
         },
         message: "Invalid ebook category",
       },
@@ -58,3 +86,5 @@ const ebookSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("ebook", ebookSchema);
+module.exports.EBOOK_CATEGORIES = EBOOK_CATEGORIES;
+module.exports.ALLOWED_EBOOK_CATEGORIES = ALLOWED_EBOOK_CATEGORIES;

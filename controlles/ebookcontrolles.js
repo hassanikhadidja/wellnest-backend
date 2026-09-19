@@ -1,5 +1,5 @@
 const Ebook = require("../models/ebook");
-const { CONTENT_CATEGORIES } = require("../models/article");
+const { ALLOWED_EBOOK_CATEGORIES } = Ebook;
 const { ebookToDash } = require("../utils/dto");
 
 function asStringArray(value) {
@@ -9,7 +9,7 @@ function asStringArray(value) {
 
 function normalizeCategories(raw) {
   if (!Array.isArray(raw)) return [];
-  return raw.filter((c) => CONTENT_CATEGORIES.includes(c));
+  return raw.filter((c) => ALLOWED_EBOOK_CATEGORIES.includes(c));
 }
 
 function normalizeRecipeMeta(raw) {
