@@ -1,5 +1,5 @@
 const express = require("express");
-const Auth = require("../middlewares/isAuth");
+const { Auth } = require("../middlewares/isAuth");
 const isAdmin = require("../middlewares/isAdmin");
 const ctrl = require("../controlles/ebookCategorycontrolles");
 
